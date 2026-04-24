@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Слайдер изображений</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .slider-wrapper {
+      background: #ffffff;
+      border-radius: 16px;
+      border: 1px solid #dde1e7;
+      overflow: hidden;
+      width: 560px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    .slide-area {
+      position: relative;
+      height: 320px;
+      overflow: hidden;
+      background: #f8f9fb;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .slide.active { opacity: 1; }
+
+    .slide img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .slide-placeholder {
+      width: 100%;
+      height: 100%;
+    }
+
+    .caption {
+      text-align: center;
+      padding: 12px 16px;
+      font-size: 15px;
+      font-weight: 500;
+      color: #1a1a2e;
+      border-top: 1px solid #eaecf0;
+      border-bottom: 1px solid #eaecf0;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+    }
+
+    .nav-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      border: 1px solid #dde1e7;
+      background: transparent;
+      cursor: pointer;
+      font-size: 18px;
+      color: #1a1a2e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+
+    .nav-btn:hover { background: #f0f2f5; }
+    .nav-btn:active { transform: scale(0.96); }
+
+    .center-info {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dots {
+      display: flex;
+      gap: 7px;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #c8cdd6;
+      transition: background 0.2s;
+    }
+
+    .dot.active { background: #1a1a2e; }
+
+    .counter {
+      font-size: 13px;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+
+<div class="slider-wrapper">
+  <div class="slide-area" id="slideArea"></div>
+  <div class="caption" id="caption"></div>
+  <div class="controls">
+    <button class="nav-btn" id="prevBtn">&#8592;</button>
+    <div class="center-info">
+      <div class="dots" id="dots"></div>
+      <span class="counter" id="counter"></span>
+    </div>
+    <button class="nav-btn" id="nextBtn">&#8594;</button>
+  </div>
+</div>
+
+<script>
+  const slides = [
+    { caption: "Горный пейзаж",   color: "#B5D4F4", accent: "#0C447C", shape: "mountain" },
+    { caption: "Закат над морем",  color: "#F5C4B3", accent: "#712B13", shape: "sunset"   },
+    { caption: "Ночной город",     color: "#CECBF6", accent: "#3C3489", shape: "city"     },
+    { caption: "Зелёный лес",      color: "#C0DD97", accent: "#27500A", shape: "forest"   },
+    { caption: "Пустыня",          color: "#FAC775", accent: "#633806", shape: "desert"   },
+  ];
+
+  function makeSVG(s) {
+    const b = s.color, f = s.accent;
+    const shapes = {
+      mountain: `<polygon points="80,240 200,80 320,240" fill="${f}" opacity="0.7"/>
+                 <polygon points="220,240 360,60 500,240" fill="${f}" opacity="0.9"/>
+                 <rect y="240" width="560" height="80" fill="${f}" opacity="0.3"/>`,
+      sunset:   `<ellipse cx="280" cy="160" rx="65" ry="65" fill="${f}" opacity="0.85"/>
+                 <rect y="210" width="560" height="110" fill="${f}" opacity="0.28"/>`,
+      city:     `<rect x="60"  y="110" width="50" height="210" fill="${f}" opacity="0.8"/>
+                 <rect x="130" y="70"  width="40" height="250" fill="${f}" opacity="0.7"/>
+                 <rect x="190" y="90"  width="60" height="230" fill="${f}" opacity="0.85"/>
+                 <rect x="270" y="50"  width="35" height="270" fill="${f}" opacity="0.75"/>
+                 <rect x="325" y="100" width="55" height="220" fill="${f}" opacity="0.8"/>
+                 <rect x="400" y="80"  width="45" height="240" fill="${f}" opacity="0.7"/>
+                 <rect x="460" y="120" width="50" height="200" fill="${f}" opacity="0.85"/>`,
+      forest:   `<ellipse cx="100" cy="160" rx="55" ry="80" fill="${f}" opacity="0.7"/>
+                 <ellipse cx="200" cy="140" rx="60" ry="95" fill="${f}" opacity="0.85"/>
+                 <ellipse cx="310" cy="150" rx="65" ry="90" fill="${f}" opacity="0.75"/>
+                 <ellipse cx="420" cy="145" rx="55" ry="85" fill="${f}" opacity="0.8"/>
+                 <ellipse cx="510" cy="160" rx="50" ry="75" fill="${f}" opacity="0.7"/>
+                 <rect y="240" width="560" height="80" fill="${f}" opacity="0.4"/>`,
+      desert:   `<ellipse cx="280" cy="240" rx="210" ry="45" fill="${f}" opacity="0.3"/>
+                 <polygon points="100,240 170,80 240,240"  fill="${f}" opacity="0.5"/>
+                 <polygon points="270,240 360,55 450,240"  fill="${f}" opacity="0.6"/>
+                 <ellipse cx="90"  cy="75" rx="32" ry="20" fill="${f}" opacity="0.25"/>
+                 <ellipse cx="440" cy="65" rx="38" ry="22" fill="${f}" opacity="0.2"/>`,
+    };
+    return `<svg viewBox="0 0 560 320" xmlns="http://www.w3.org/2000/svg">
+      <rect width="560" height="320" fill="${b}"/>
+      ${shapes[s.shape]}
+    </svg>`;
+  }
+
+  const area    = document.getElementById('slideArea');
+  const caption = document.getElementById('caption');
+  const counter = document.getElementById('counter');
+  const dotsEl  = document.getElementById('dots');
+  let current   = 0;
+
+  slides.forEach((s, i) => {
+    const div = document.createElement('div');
+    div.className = 'slide' + (i === 0 ? ' active' : '');
+    div.innerHTML = `<div class="slide-placeholder">${makeSVG(s)}</div>`;
+    area.appendChild(div);
+
+    const dot = document.createElement('div');
+    dot.className = 'dot' + (i === 0 ? ' active' : '');
+    dotsEl.appendChild(dot);
+  });
+
+  function goTo(n) {
+    const slideEls = area.querySelectorAll('.slide');
+    const dotEls   = dotsEl.querySelectorAll('.dot');
+
+    slideEls[current].classList.remove('active');
+    dotEls[current].classList.remove('active');
+
+    current = (n + slides.length) % slides.length;
+
+    slideEls[current].classList.add('active');
+    dotEls[current].classList.add('active');
+
+    caption.textContent = slides[current].caption;
+    counter.textContent = `Изображение ${current + 1} из ${slides.length}`;
+  }
+
+  goTo(0);
+
+  document.getElementById('prevBtn').addEventListener('click', () => goTo(current - 1));
+  document.getElementById('nextBtn').addEventListener('click', () => goTo(current + 1));
+</script>
+
+</body>
+</html>
